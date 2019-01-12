@@ -2,6 +2,7 @@ package com.Students.Students;
 import java.util.Date;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
@@ -17,6 +18,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
+
 
 @XmlRootElement
 @Entity
@@ -24,22 +27,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @AllArgsConstructor
 @Getter
 @Setter
-@JsonFilter("studentFilter")     /*in case of static filtering comment it*/
+//@JsonFilter("studentFilter")     /*in case of static filtering comment it*/
 public class StudentV1 {
 	
 	@NotNull
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Id
 	@JsonProperty("studentId") 
 	//@JsonIgnore   /*in case of static filtering comment it*/
+    @ApiModelProperty(notes = "The database generated Student ID")
 	private Long studentId;
 	
 	@JsonProperty("studentName")
 	@Size(min = 2, message = "name should contain min 2 characters")
+	@ApiModelProperty(notes = "The Student Name ")
 	private String studentName;
 	
 	@Past
 	@JsonProperty("dateofbirth")
+	@ApiModelProperty(notes = "The Student Date OF Birth")
 	private Date dateofbirth;	
 	
 	public StudentV1(String studentName) {
