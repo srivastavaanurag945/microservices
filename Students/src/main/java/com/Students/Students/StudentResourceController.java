@@ -1,7 +1,7 @@
 package com.Students.Students;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+
 import javax.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +42,7 @@ import io.swagger.annotations.ApiResponses;
 public class StudentResourceController {
     
 	@Autowired
-    private StudentDatabaseService studentDatabaseService ;
+	private StudentRepository studentRepository;
 
     @GetMapping("/students")
     @Path("both")
@@ -54,22 +54,22 @@ public class StudentResourceController {
             @ApiResponse(code = 404, message = "The resource you were trying to reach is not found")
     }
     )
-//    @Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
+//  @Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-    public Resources<List> getAllStudents()
+    public Resources<Iterable> getAllStudents()
 	 {
-    	List<StudentV1> studentList = studentDatabaseService.findAll();
+    	Iterable<StudentV1> studentList = studentRepository.findAll();
        
-        if(studentList.size()==0){
+        if(studentList==null){
         	throw new StudentNotFoundException("Student data is empty-");
         }
         
-        Resources<List> resource = new Resources(studentList);
+        Resources<Iterable> resource = new Resources(studentList);
         ControllerLinkBuilder linkBuilder = linkTo(methodOn(this.getClass()).getAllStudents());
 
         resource.add(linkBuilder.withRel("all-students"));
 
-        return resource;
+        return (Resources<Iterable>) resource;
 	 }
     
     @ApiOperation(value = "Search a Student with an ID",response = StudentV1.class)
@@ -81,14 +81,15 @@ public class StudentResourceController {
     }
     )
     @GetMapping("/students/{studentId}")
-	 public Resource<StudentV1> getStudent(@PathVariable Long studentId)
-	 {
-    	StudentV1 student =  studentDatabaseService.findOne(studentId);
-        if(student==null){
+	public Resource<Optional> getStudent(@PathVariable Long studentId){
+    	
+    	Optional<StudentV1> student =  studentRepository.findById(studentId);
+    	
+    	/*if(student.ofNullable(null) != null){
             throw new StudentNotFoundException("Student not found id-" + studentId);
-        }
-        Resource<StudentV1> resource = new Resource<>(student);
-        ControllerLinkBuilder linkBuilder = linkTo(methodOn(this.getClass()).getAllStudents());
+        }*/
+        Resource<Optional> resource = new Resource<>(student);
+        ControllerLinkBuilder linkBuilder = linkTo(methodOn(this.getClass()).getStudent(studentId));
 
         resource.add(linkBuilder.withRel("current-student"));
         return resource;	 
@@ -103,18 +104,21 @@ public class StudentResourceController {
     }
     )
     @PostMapping("/students")
+    @Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	 public ResponseEntity<String> saveStudent( @Valid @RequestBody StudentV1 student){
 	        
-	            StudentV1 createdStudent = studentDatabaseService.save(student);
-	            URI uri=null;
-	            if(createdStudent!=null) {
-	            	uri = ServletUriComponentsBuilder.fromCurrentRequest().build().toUri();
-	            return ResponseEntity.created(uri).build();
-	            }
-	            else{
-	            	throw new StudentNotFoundException("Student Id - " + student.getStudentId());
-	            }
-	    }
+	    StudentV1 stu = new StudentV1(student.getStudentName(),student.getDateofbirth());
+    	StudentV1 createdStudent =studentRepository.save(stu);
+    
+    	URI uri=null;
+	    if(createdStudent!=null) {
+	           	uri = ServletUriComponentsBuilder.fromCurrentRequest().build().toUri();
+	         
+	         return ResponseEntity.created(uri).build();
+	         }else{
+	            throw new StudentNotFoundException("Student Id - " + student.getStudentId());
+	      }
+	 }
 	 
 	 @ApiOperation(value = "Update Student")
 	 @ApiResponses(value = {
@@ -126,13 +130,12 @@ public class StudentResourceController {
 	    )
 	 @PutMapping(value="/students/{studentId}")
 	 public void updateStudent(@PathVariable long studentId, @Valid @RequestBody StudentV1 updatedStudent) {
-		 StudentV1 student =  studentDatabaseService.findOne(studentId);
-	        if(student!=null){
-	            studentDatabaseService.update(studentId,updatedStudent);
-	        }
-	        else {
-	        	throw new StudentNotFoundException("Student Id - " + student.getStudentId());
-	        }
+		 
+		 StudentV1 student =  studentRepository.findById(studentId).get();
+		 student.setStudentName(updatedStudent.getStudentName());
+		 student.setDateofbirth(updatedStudent.getDateofbirth());
+		 studentRepository.save(student);
+		 
 	 }
 	 
 	 @ApiOperation(value = "Delete a Student")
@@ -145,7 +148,7 @@ public class StudentResourceController {
 	    )
 	 @DeleteMapping(value = "/students/{studentId}")
 	 public void deleteStudent(@PathVariable long studentId){
-		 studentDatabaseService.deleteById(studentId);
+		 studentRepository.deleteById(studentId);
 	 }
 	
 	 
@@ -166,8 +169,8 @@ public class StudentResourceController {
 	 
 	    public MappingJacksonValue getAllStudentsWithFilters()
 		 {
-	    	List<StudentV1> studentList = studentDatabaseService.findAll();
-	        if(studentList.size()==0){
+		 Iterable<StudentV1> studentList = studentRepository.findAll();
+	        if(studentList==null){
 	        	throw new StudentNotFoundException("Student data is empty-");
 	        }
 	    	

@@ -26,11 +26,9 @@ import io.swagger.annotations.ApiModelProperty;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@Setter
-//@JsonFilter("studentFilter")     /*in case of static filtering comment it*/
+@JsonFilter("studentFilter")     /*in case of static filtering comment it*/
 public class StudentV1 {
 	
-	@NotNull
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Id
 	@JsonProperty("studentId") 
@@ -50,6 +48,21 @@ public class StudentV1 {
 	
 	public StudentV1(String studentName) {
 		this.studentName=studentName;
+	}
+
+	public StudentV1(@Size(min = 2, message = "name should contain min 2 characters") String studentName,
+			@Past Date dateofbirth) {
+		super();
+		this.studentName = studentName;
+		this.dateofbirth = dateofbirth;
+	}
+
+	public void setStudentName(String studentName) {
+		this.studentName = studentName;
+	}
+
+	public void setDateofbirth(Date dateofbirth) {
+		this.dateofbirth = dateofbirth;
 	}
 	
 }
